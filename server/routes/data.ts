@@ -21,15 +21,29 @@ const requireAuth = (req: any, res: any, next: any) => {
   }
 };
 
-const POPULAR_TICKERS = ["AAPL", "MSFT", "GOOGL", "AMZN", "META", "TSLA", "NVDA", "JNJ", "V", "JPM", "WMT", "UNH", "PG", "HD", "MA", "BAC", "DIS", "ADBE", "CRM", "NFLX"];
+const POPULAR_TICKERS = [
+  "AAPL", "MSFT", "GOOGL", "AMZN", "META", "TSLA", "NVDA", "JNJ", "V", "JPM", 
+  "WMT", "UNH", "PG", "HD", "MA", "BAC", "DIS", "ADBE", "CRM", "NFLX",
+  "XOM", "CVX", "KO", "PEP", "COST", "MCD", "TMO", "ABT", "DHR", "NKE",
+  "TXN", "NEE", "LIN", "PM", "RTX", "HON", "UPS", "INTC", "IBM", "ORCL",
+  "QCOM", "AMD", "CSCO", "INTU", "AMGN", "SBUX", "GS", "MS", "BLK", "C"
+];
 
 function getSectorForTicker(ticker: string) {
   const sectors: Record<string, string> = {
     AAPL: 'Technology', MSFT: 'Technology', GOOGL: 'Technology', AMZN: 'Consumer Discretionary',
     META: 'Technology', TSLA: 'Consumer Discretionary', NVDA: 'Technology', JNJ: 'Healthcare',
-    V: 'Financials', JPM: 'Financials', WMT: 'Consumer Discretionary', UNH: 'Healthcare',
-    PG: 'Consumer Discretionary', HD: 'Consumer Discretionary', MA: 'Financials', BAC: 'Financials',
-    DIS: 'Consumer Discretionary', ADBE: 'Technology', CRM: 'Technology', NFLX: 'Technology'
+    V: 'Financials', JPM: 'Financials', WMT: 'Consumer Staples', UNH: 'Healthcare',
+    PG: 'Consumer Staples', HD: 'Consumer Discretionary', MA: 'Financials', BAC: 'Financials',
+    DIS: 'Communication Services', ADBE: 'Technology', CRM: 'Technology', NFLX: 'Communication Services',
+    XOM: 'Energy', CVX: 'Energy', KO: 'Consumer Staples', PEP: 'Consumer Staples',
+    COST: 'Consumer Staples', MCD: 'Consumer Discretionary', TMO: 'Healthcare', ABT: 'Healthcare',
+    DHR: 'Healthcare', NKE: 'Consumer Discretionary', TXN: 'Technology', NEE: 'Utilities',
+    LIN: 'Materials', PM: 'Consumer Staples', RTX: 'Industrials', HON: 'Industrials',
+    UPS: 'Industrials', INTC: 'Technology', IBM: 'Technology', ORCL: 'Technology',
+    QCOM: 'Technology', AMD: 'Technology', CSCO: 'Technology', INTU: 'Technology',
+    AMGN: 'Healthcare', SBUX: 'Consumer Discretionary', GS: 'Financials', MS: 'Financials',
+    BLK: 'Financials', C: 'Financials'
   };
   return sectors[ticker] || 'Other';
 }
@@ -107,8 +121,10 @@ router.get("/screener", requireAuth, async (req, res) => {
       change: q.regularMarketChange || 0,
       changePercent: q.regularMarketChangePercent || 0,
       marketCap: q.marketCap ? (q.marketCap / 1e9).toFixed(2) + "B" : "N/A",
+      marketCapValue: q.marketCap || 0,
       sector: getSectorForTicker(q.symbol),
       peRatio: q.trailingPE || 0,
+      dividendYield: q.dividendYield || (q.trailingAnnualDividendYield ? q.trailingAnnualDividendYield * 100 : 0),
       rsi: 50, // Mock RSI as it requires historical calculation
       signal: "HOLD" // Mock signal
     }));
@@ -124,18 +140,23 @@ router.get("/screener", requireAuth, async (req, res) => {
     }
     
     // Fallback mock data if Yahoo Finance fails and no cache
-    const mockStocks = POPULAR_TICKERS.map(ticker => ({
-      ticker,
-      name: ticker + " Inc.",
-      price: 150 + Math.random() * 100,
-      change: (Math.random() * 10) - 5,
-      changePercent: (Math.random() * 4) - 2,
-      marketCap: (100 + Math.random() * 2000).toFixed(2) + "B",
-      sector: getSectorForTicker(ticker),
-      peRatio: 15 + Math.random() * 20,
-      rsi: 50,
-      signal: "HOLD"
-    }));
+    const mockStocks = POPULAR_TICKERS.map(ticker => {
+      const marketCapVal = 100e9 + Math.random() * 2000e9;
+      return {
+        ticker,
+        name: ticker + " Inc.",
+        price: 150 + Math.random() * 100,
+        change: (Math.random() * 10) - 5,
+        changePercent: (Math.random() * 4) - 2,
+        marketCap: (marketCapVal / 1e9).toFixed(2) + "B",
+        marketCapValue: marketCapVal,
+        sector: getSectorForTicker(ticker),
+        peRatio: 15 + Math.random() * 20,
+        dividendYield: Math.random() * 5,
+        rsi: 50,
+        signal: "HOLD"
+      };
+    });
     
     res.json(mockStocks.slice(0, Number(limit)));
   }
