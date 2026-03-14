@@ -1,0 +1,5 @@
+{
+  "name": "StockRadar",
+  "description": "A freemium stock-analysis dashboard with AI insights, screener, and fair value calculator.",
+  "requestFramePermissions": []
+}
